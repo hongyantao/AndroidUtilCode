@@ -1,6 +1,5 @@
 package com.blankj.utilcode.util;
 
-
 import android.support.annotation.NonNull;
 
 import org.junit.Test;
@@ -10,9 +9,7 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLog;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <pre>
@@ -25,6 +22,11 @@ import java.util.concurrent.TimeUnit;
 @RunWith(RobolectricTestRunner.class)
 @Config(manifest = Config.NONE, shadows = {ShadowLog.class})
 public class BaseTest {
+
+    @BusUtils.Bus(tag = "base")
+    public void noParamFun(int i) {
+        System.out.println("base" + i);
+    }
 
     public BaseTest() {
         ShadowLog.stream = System.out;
@@ -39,25 +41,5 @@ public class BaseTest {
 
     @Test
     public void test() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
-
-        for (int i = 0; i < 100; i++) {
-            final int finalI = i;
-            ThreadUtils.executeByCpu(new ThreadUtils.SimpleTask<Void>() {
-                @Override
-                public Void doInBackground() throws Throwable {
-                    System.out.println("" + Thread.currentThread() + finalI);
-                    Thread.sleep(100);
-                    return null;
-                }
-
-                @Override
-                public void onSuccess(Void result) {
-
-                }
-            });
-        }
-
-        latch.await(1, TimeUnit.SECONDS);
     }
 }

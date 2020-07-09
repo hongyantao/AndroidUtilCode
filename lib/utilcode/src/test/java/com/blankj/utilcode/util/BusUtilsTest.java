@@ -30,6 +30,11 @@ public class BusUtilsTest extends BaseTest {
         System.out.println("noParam");
     }
 
+    @BusUtils.Bus(tag = TAG_NO_PARAM)
+    public void noParamSameTagFun() {
+        System.out.println("sameTag: noParam");
+    }
+
     @BusUtils.Bus(tag = TAG_ONE_PARAM)
     public void oneParamFun(String param) {
         System.out.println(param);
@@ -38,6 +43,11 @@ public class BusUtilsTest extends BaseTest {
     @BusUtils.Bus(tag = TAG_NO_PARAM_STICKY, sticky = true)
     public void noParamStickyFun() {
         System.out.println("noParamSticky");
+    }
+
+    @BusUtils.Bus(tag = TAG_NO_PARAM_STICKY)
+    public void foo() {
+        System.out.println("foo");
     }
 
     @BusUtils.Bus(tag = TAG_ONE_PARAM_STICKY, sticky = true)
@@ -73,16 +83,25 @@ public class BusUtilsTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        ReflectUtils getInstance = ReflectUtils.reflect(BusUtils.class).method("getInstance");
-        getInstance.method("registerBus", TAG_NO_PARAM, BusUtilsTest.class.getName(), "noParamFun", "", "", false, "POSTING");
-        getInstance.method("registerBus", TAG_ONE_PARAM, BusUtilsTest.class.getName(), "oneParamFun", String.class.getName(), "param", false, "POSTING");
-        getInstance.method("registerBus", TAG_NO_PARAM_STICKY, BusUtilsTest.class.getName(), "noParamStickyFun", "", "", true, "POSTING");
-        getInstance.method("registerBus", TAG_ONE_PARAM_STICKY, BusUtilsTest.class.getName(), "oneParamStickyFun", Callback.class.getName(), "callback", true, "POSTING");
+        BusUtils.registerBus4Test(TAG_NO_PARAM, BusUtilsTest.class.getName(), "noParamFun", "", "", false, "POSTING", 0);
+        BusUtils.registerBus4Test(TAG_ONE_PARAM, BusUtilsTest.class.getName(), "oneParamFun", String.class.getName(), "param", false, "POSTING", 0);
+        BusUtils.registerBus4Test(TAG_NO_PARAM_STICKY, BusUtilsTest.class.getName(), "noParamStickyFun", "", "", true, "POSTING", 0);
+        BusUtils.registerBus4Test(TAG_NO_PARAM_STICKY, BusUtilsTest.class.getName(), "foo", "", "", false, "POSTING", 0);
+        BusUtils.registerBus4Test(TAG_ONE_PARAM_STICKY, BusUtilsTest.class.getName(), "oneParamStickyFun", Callback.class.getName(), "callback", true, "POSTING", 0);
 
-        getInstance.method("registerBus", TAG_IO, BusUtilsTest.class.getName(), "ioFun", CountDownLatch.class.getName(), "latch", false, "IO");
-        getInstance.method("registerBus", TAG_CPU, BusUtilsTest.class.getName(), "cpuFun", CountDownLatch.class.getName(), "latch", false, "CPU");
-        getInstance.method("registerBus", TAG_CACHED, BusUtilsTest.class.getName(), "cachedFun", CountDownLatch.class.getName(), "latch", false, "CACHED");
-        getInstance.method("registerBus", TAG_SINGLE, BusUtilsTest.class.getName(), "singleFun", CountDownLatch.class.getName(), "latch", false, "SINGLE");
+        BusUtils.registerBus4Test(TAG_IO, BusUtilsTest.class.getName(), "ioFun", CountDownLatch.class.getName(), "latch", false, "IO", 0);
+        BusUtils.registerBus4Test(TAG_CPU, BusUtilsTest.class.getName(), "cpuFun", CountDownLatch.class.getName(), "latch", false, "CPU", 0);
+        BusUtils.registerBus4Test(TAG_CACHED, BusUtilsTest.class.getName(), "cachedFun", CountDownLatch.class.getName(), "latch", false, "CACHED", 0);
+        BusUtils.registerBus4Test(TAG_SINGLE, BusUtilsTest.class.getName(), "singleFun", CountDownLatch.class.getName(), "latch", false, "SINGLE", 0);
+    }
+
+    @Test
+    public void testSticky() {
+        BusUtils.postSticky(TAG_NO_PARAM_STICKY);
+        BusUtilsTest test = new BusUtilsTest();
+        BusUtils.register(test);
+
+        BusUtils.postSticky(TAG_NO_PARAM_STICKY);
     }
 
     @Test
@@ -96,6 +115,8 @@ public class BusUtilsTest extends BaseTest {
 //                }
 //            }).start();
 //        }
+//        CountDownLatch countDownLatch = new CountDownLatch(1);
+//        BusUtils.register(test);
 //        for (int i = 0; i < 100; i++) {
 //            new Thread(new Runnable() {
 //                @Override
@@ -104,6 +125,12 @@ public class BusUtilsTest extends BaseTest {
 //                }
 //            }).start();
 //        }
+//        try {
+//            countDownLatch.await(1, TimeUnit.SECONDS);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        BusUtils.unregister(test);
 //        for (int i = 0; i < 100; i++) {
 //            new Thread(new Runnable() {
 //                @Override
@@ -237,6 +264,26 @@ public class BusUtilsTest extends BaseTest {
     @Test
     public void toString_() {
         System.out.println("BusUtils.toString_() = " + BusUtils.toString_());
+    }
+
+    @Test
+    public void testBase() {
+        BusUtils.registerBus4Test("base", BaseTest.class.getName(), "noParamFun", "int", "i", false, "POSTING", 0);
+
+        BaseTest t = new BusUtilsTest();
+        BusUtils.register(t);
+        BusUtils.post("base", 1);
+        BusUtils.unregister(t);
+    }
+
+    @Test
+    public void testSameTag() {
+        BusUtils.registerBus4Test(TAG_NO_PARAM, BusUtilsTest.class.getName(), "noParamSameTagFun", "", "", false, "POSTING", 2);
+
+        BusUtilsTest test = new BusUtilsTest();
+        BusUtils.register(test);
+        BusUtils.post(TAG_NO_PARAM);
+        BusUtils.unregister(test);
     }
 
     public interface Callback {

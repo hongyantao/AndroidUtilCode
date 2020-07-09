@@ -4,7 +4,9 @@
 
 随着项目业务越来越多，开发出一套好的组件化方案势在必行，如果还在探寻一套好的组件化架构，那么 **[AucFrame](https://github.com/Blankj/AucFrameTemplate)** 想必会是你的菜。
 
-组件化方案中各业务是相互隔离的，所以两个业务模块要通信的话，就需要通过路由或者接口下沉来完成，业界的方案都无法与 **[AucFrame](https://github.com/Blankj/AucFrameTemplate)** 完美融合，所以我就只好自己动手来完成一个更方便、精简、完美的 `ApiUtils`，它功能类似 SPI，但比 SPI 更适合于 Android，而且功能更强大。
+组件化方案中各业务是相互隔离的，所以两个业务模块要通信的话，就需要通过路由或者接口下沉来完成，业界的方案都无法与 **[AucFrame](https://github.com/Blankj/AucFrameTemplate)** 完美融合，所以我就只好自己动手来完成一个更方便、精简、完美的 `ApiUtils`。
+
+它功能类似 SPI，但比 SPI 更适合于 Android，而且功能更强大，这里也吐槽下 Android 中使用 ServiceLoader 会引起的 ANR 的问题，虽然 kotlinx 中 R8 加入了 FastServiceLoader，但如果不用 kotlinx 的项目还是无法解决 ANR 的问题；解决方案肯定是有的，这里就不展开讨论这个问题了。
 
 在 **[AucFrame](https://github.com/Blankj/AucFrameTemplate)** 架构中，我们可以通过 `ApiUtils` 来自由调用各模块的 `apis`，各业务通过对外提供的 `export` 模块来供其他业务方使用，自身只需要实现自身的 `export` 中的 `apis` 即可。其 **[AucFrame](https://github.com/Blankj/AucFrameTemplate)** 的架构图如下所示：
 
@@ -28,7 +30,7 @@
 buildscript {
     dependencies {
         ...
-        classpath 'com.blankj:api-gradle-plugin:1.0'
+        classpath 'com.blankj:api-gradle-plugin:1.4'
     }
 }
 ```
@@ -45,7 +47,7 @@ apply plugin: "com.blankj.api"
 api "com.blankj:utilcode:latest_version"
 ```
 
-如果你单纯只想引入 `ApiUtils` 也是可以的，需要你自己拷贝一份这个类放到你工程里，然后在 app 下的 `build.gradle` 中 配置 api 的 SDL 域如下所示：
+如果你单纯只想引入 `ApiUtils` 也是可以的，需要你自己拷贝一份这个类放到你工程里，然后在 app 下的 `build.gradle` 中 配置 api 的 DSL 域如下所示：
 
 ```groovy
 api {
@@ -60,6 +62,19 @@ android {
 可以猜测到默认的 apiUtilsClass 为 `com.blankj.utilcode.util.ApiUtils` 哈。
 
 当然，如果你项目是开启混淆的话，全量引入 **[AndroidUtilCode](https://github.com/Blankj/AndroidUtilCode)** 也是可以的，混淆会帮你去除未使用到的类和方法。
+
+api 完整的 DSL 如下所示：
+
+```groovy
+api {
+    abortOnError boolean   // api 扫描有问题是否终止编译，默认 true
+    apiUtilsClass String   // ApiUtils 类的路径，默认 'com.blankj.utilcode.util.ApiUtils'
+    onlyScanLibRegex String// 设置 transform 只扫描库的正则，比如 auc 配置的 '^([:]|(com\\.blankj)).+$'，
+                           // [:] 表示扫描本地 module，因为本地 module 在 transform 中的 jar 包名是以 : 开头的，比如 :feature:utilcode:feature_utilcode_pkg，
+                           // com.blankj 表示扫描远端仓库以 com.blankj 开头的，比如 com.blankj:utilcode:xx
+    jumpScanLibRegex String// 和 onlyScanLibRegex 类似，不过是指要跳过哪些扫描的，和 onlyScanLibRegex 不能共存，onlyScanLibRegex 优先级更高
+}
+```
 
 ### 例子
 
@@ -352,3 +367,6 @@ public abstract static class BaseApi {
 这段代码很好理解，而且加了同步锁操作，防止多线程生成多个 `impl`，然后，根据传进来的 `api` 的 class，我们通过注入的 `map` 中找到具体的 `impl` 的 class，如果缓存中有就取缓存中的，没有的话就通过 `newInstance` 来实例化一个 `impl`，并放入缓存中，最终返回其 `impl`。因为是通过 `newInstance` 来实例化 `impl`，这也解释了为什么 `impl` 中需保留无参构造函数，而且只有在使用时才会初始化，而不是一股脑把所有的 `api` 都初始化。
 
 简易实用，不到 100 行代码实现模块间跳转的 `ApiUtils` 已介绍完毕，接下来你就可以小试牛刀了。
+
+
+## [Change Log](https://github.com/Blankj/AndroidUtilCode/blob/master/plugin/api-gradle-plugin/CHANGELOG.md)
